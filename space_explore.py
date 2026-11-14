@@ -1,78 +1,70 @@
-
 import streamlit as st
 import pandas as pd
+from datetime import date
 
-# App title
-st.title("🚀 Space Explorer Adventure")
+st.title("To-Do List & Habit Tracker ✅")
 
-# Sidebar navigation
-st.sidebar.title("Navigation")
-choice = st.sidebar.radio("Navigate to:", ["Home", "Space Quiz", "Mission Planner"])
+page = st.sidebar.selectbox("Select Page", ["To-Do List", "Habit Tracker"])
 
-# Home Section
-if choice == "Home":
-    st.header("🌌 Welcome to Space Explorer Adventure!")
-    st.write("""
-        Embark on an interstellar journey!  
-        - Take a fun Space Quiz.  
-        - Plan your Space Mission.  
-        Navigate through the sections using the sidebar.  
-    """)
+# Initialize session state for tasks and habits
+if "tasks" not in st.session_state:
+    st.session_state.tasks = pd.DataFrame(columns=["Task", "Deadline", "Completed"])
 
-# Space Quiz Section
-elif choice == "Space Quiz":
-    st.header("🧑‍🚀 Test Your Space Knowledge")
+if "habits" not in st.session_state:
+    st.session_state.habits = pd.DataFrame(columns=["Habit", "Completed"])
 
-    # Quiz questions
-    st.subheader("Answer the following questions:")
-    q1 = st.radio("Q1: What is the largest planet in our solar system?", ["Earth", "Jupiter", "Mars"])
-    q2 = st.radio("Q2: Who was the first human to travel into space?", ["Neil Armstrong", "Buzz Aldrin", "Yuri Gagarin"])
-    q3 = st.radio("Q3: What galaxy do we live in?", ["Milky Way Galaxy","Andromeda Galaxy",  "Whirlpool Galaxy"])
+if page == "To-Do List":
+    st.header("To-Do List")
 
-    # Submit quiz answers
-    if st.button("Submit Quiz"):
-        score = 0
-        score += 1 if q1 == "Jupiter" else 0
-        score += 1 if q2 == "Yuri Gagarin" else 0
-        score += 1 if q3 == "Milky Way Galaxy" else 0
+    # User inputs
+    new_task = st.text_input("Add a new task:", key="task_input")
+    deadline = st.date_input("Deadline:", min_value=date.today())
 
-        st.success(f"Your score is {score}/3. Great job!")
+    if st.button("Add Task"):
+        if new_task:
+            new_row = pd.DataFrame({"Task": [new_task], "Deadline": [deadline], "Completed": ["Undone"]})
+            st.session_state.tasks = pd.concat([st.session_state.tasks, new_row], ignore_index=True)
+            st.session_state.pop("task_input")  # Clears the input field
+            st.rerun()  # Refresh the UI
 
-        # Display results in a table
-        results = pd.DataFrame({
-            "Question": ["Q1", "Q2", "Q3"],
-            "Your Answer": [q1, q2, q3],
-            "Correct Answer": ["Jupiter", "Yuri Gagarin", "Milky Way Galaxy"]
-        })
-        st.write("Quiz Results:")
-        st.table(results)
+    # Display and update task list
+    if not st.session_state.tasks.empty:
+        updated_tasks = st.session_state.tasks.copy()
+        for index, row in updated_tasks.iterrows():
+            completed = st.checkbox(row["Task"], value=(row["Completed"] == "Done"), key=f"task_{index}")
+            updated_tasks.loc[index, "Completed"] = "Done" if completed else "Undone"
 
-# Mission Planner Section
-elif choice == "Mission Planner":
-    st.header("🛰️ Plan Your Space Mission")
+        st.session_state.tasks = updated_tasks
 
-    # Spacecraft name input
-    spacecraft = st.text_input("Name your spacecraft:", "Star Explorer")
+        # Display the task list with numbering
+        st.write("### Task List:")
+        task_list = st.session_state.tasks.copy()
+        task_list.index = task_list.index + 1  # Start numbering from 1
+        st.table(task_list)
 
-    # Space mission launch date
-    launch_date = st.date_input("Select your mission launch date:")
+elif page == "Habit Tracker":
+    st.header("Habit Tracker")
 
-    # Space mission launch time
-    launch_time = st.time_input("Select your mission launch time:")
+    new_habit = st.text_input("Add a new habit:", key="habit_input")
 
-    # Select a spaceship type
-    spaceship_type = st.selectbox("Choose your spaceship type:", ["Rocket", "Shuttle", "Space Station"])
+    if st.button("Add Habit"):
+        if new_habit:
+            new_row = pd.DataFrame({"Habit": [new_habit], "Completed": ["Undone"]})
+            st.session_state.habits = pd.concat([st.session_state.habits, new_row], ignore_index=True)
+            st.session_state.pop("habit_input")  # Clears the input field
+            st.rerun()  # Refresh UI
 
-    # Motivational space quote
-    category = st.selectbox("Pick a motivational space quote:", ["Exploration", "Discovery", "Adventure"])
-    quotes = {
-        "Exploration": "To explore the universe is to explore ourselves.",
-        "Discovery": "Discovery is seeing what everybody else has seen, and thinking what nobody else has thought.",
-        "Adventure": "Space is an adventure worth taking."
-    }
-    st.write(f"Motivational Quote: '{quotes[category]}'")
+    # Display and update habit list
+    if not st.session_state.habits.empty:
+        updated_habits = st.session_state.habits.copy()
+        for index, row in updated_habits.iterrows():
+            completed = st.checkbox(row["Habit"], value=(row["Completed"] == "Done"), key=f"habit_{index}")
+            updated_habits.loc[index, "Completed"] = "Done" if completed else "Undone"
 
-    # Save Mission Button
-    if st.button("Save Mission"):
-        st.success(f"Your space mission '{spacecraft}' is planned for {launch_date} at {launch_time} on a {spaceship_type}!")
+        st.session_state.habits = updated_habits
 
+        # Display the habit list with numbering
+        st.write("### Habit List:")
+        habit_list = st.session_state.habits.copy()
+        habit_list.index = habit_list.index + 1  # Start numbering from 1
+        st.table(habit_list)
